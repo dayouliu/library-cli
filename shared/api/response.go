@@ -2,8 +2,9 @@ package api
 
 import "time"
 
+var PublishTimeLayoutDMY = "02/01/2006"
+
 type Book struct {
-	ID          int       `json:"id"`
 	Title       string    `json:"title"`
 	Author      string    `json:"author"`
 	PublishedAt time.Time `json:"published_at"`
@@ -13,14 +14,13 @@ type Book struct {
 }
 
 type Collection struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Books []Book `json:"books"`
+	Name  string   `json:"name"`
+	Books []string `json:"books"`
 }
 
 type Response struct {
-	Type       string      `json:"type"`
-	StatusCode int         `json:"status_code"`
-	Message    string      `json:"message"`
-	Data       interface{} `json:"data"`
+	Type       string `json:"type"`
+	StatusCode int    `json:"status_code"`
+	Message    string `json:"message"`
+	Data       any    `json:"data"`
 }
