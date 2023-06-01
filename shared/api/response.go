@@ -13,11 +13,6 @@ type Book struct {
 	Genre       string    `json:"genre"`
 }
 
-type Collection struct {
-	Name  string   `json:"name"`
-	Books []string `json:"books"`
-}
-
 type Response struct {
 	Type       string `json:"type"`
 	StatusCode int    `json:"status_code"`
