@@ -45,7 +45,7 @@ go test ./tests -v
 The code is tested with the following go version:
 
 ```
-❯ go version
+go version go1.20.4 linux/amd64
 go version go1.20.4 darwin/amd64
 ```
 
