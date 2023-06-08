@@ -14,10 +14,14 @@ type Handler struct {
 }
 
 func respondError(w http.ResponseWriter, err error, statusCode int, message string) {
+	if err != nil {
+		message = message + "\n" + err.Error()
+	}
+
 	response := api.Response{
 		Type:       "error",
 		StatusCode: statusCode,
-		Message:    message + "\n" + err.Error(),
+		Message:    message,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -25,10 +29,11 @@ func respondError(w http.ResponseWriter, err error, statusCode int, message stri
 	json.NewEncoder(w).Encode(response)
 }
 
-func respondJSON(w http.ResponseWriter, data interface{}) {
+func respondJSON(w http.ResponseWriter, data interface{}, message string, statusCode int) {
 	response := api.Response{
 		Type:       "success",
-		StatusCode: http.StatusCreated,
+		StatusCode: statusCode,
+		Message:    message,
 	}
 	if data != nil {
 		response.Data = data
@@ -36,6 +41,12 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
+}
+
+func genSQLConditions(conditions *[]string, values *[]any, op string, field string, value string, counter *int) {
+	*conditions = append(*conditions, fmt.Sprintf("%s %s $%d", field, op, *counter))
+	*values = append(*values, value)
+	*counter++
 }
 
 func (h *Handler) createBook(w http.ResponseWriter, r *http.Request) {
@@ -51,14 +62,15 @@ func (h *Handler) createBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.Exec(`INSERT INTO books (title, author, published_at, edition, description, genre) VALUES ($1, $2, $3, $4, $5, $6)`,
-		book.Title, book.Author, book.PublishedAt.Format("2006-01-02"), book.Edition, book.Description, book.Genre)
+	_, err = h.db.Exec(
+		"INSERT INTO books (title, author, publish_date, edition, description, genre) VALUES ($1, $2, $3, $4, $5, $6)",
+		book.Title, book.Author, book.PublishDate.Format("2006-01-02"), book.Edition, book.Description, book.Genre)
 	if err != nil {
 		respondError(w, err, http.StatusInternalServerError, "Error creating book")
 		return
 	}
 
-	respondJSON(w, nil)
+	respondJSON(w, nil, "Book created successfully", http.StatusCreated)
 }
 
 // addBook adds a book to the database
@@ -75,31 +87,41 @@ func (h *Handler) setBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updateFields := make([]string, 0)
+	counter := 1
+	conditions := make([]string, 0)
+	values := make([]any, 0)
 	if book.Author != "" {
-		updateFields = append(updateFields, fmt.Sprintf("author = '%s'", book.Author))
+		genSQLConditions(&conditions, &values, "=", "author", book.Author, &counter)
 	}
-	if !book.PublishedAt.IsZero() {
-		updateFields = append(updateFields, fmt.Sprintf("published_at = '%s'", book.PublishedAt.Format("2006-01-02")))
+	if !book.PublishDate.IsZero() {
+		genSQLConditions(&conditions, &values, "=", "publish_date", book.PublishDate.Format(api.PublishTimeLayoutDMY), &counter)
 	}
 	if book.Edition != "" {
-		updateFields = append(updateFields, fmt.Sprintf("edition = '%s'", book.Edition))
+		genSQLConditions(&conditions, &values, "=", "edition", book.Edition, &counter)
 	}
 	if book.Description != "" {
-		updateFields = append(updateFields, fmt.Sprintf("description = '%s'", book.Description))
+		genSQLConditions(&conditions, &values, "=", "description", book.Description, &counter)
 	}
 	if book.Genre != "" {
-		updateFields = append(updateFields, fmt.Sprintf("genre = '%s'", book.Genre))
+		genSQLConditions(&conditions, &values, "=", "genre", book.Genre, &counter)
 	}
-	updateQuery := "UPDATE books SET " + strings.Join(updateFields, ", ") + " WHERE title = $1"
 
-	_, err = h.db.Exec(updateQuery, book.Title)
+	if len(conditions) == 0 {
+		respondError(w, err, http.StatusBadRequest, "No fields to update")
+		return
+	}
+
+	updateQuery :=
+		fmt.Sprintf("UPDATE books SET "+strings.Join(conditions, ", ")+" WHERE title = $%d", counter)
+	values = append(values, book.Title)
+
+	_, err = h.db.Exec(updateQuery, values...)
 	if err != nil {
 		respondError(w, err, http.StatusInternalServerError, "Error updating book")
 		return
 	}
 
-	respondJSON(w, nil)
+	respondJSON(w, nil, "Book updated successfully", http.StatusOK)
 }
 
 // removeBook removes a book from the database
@@ -110,24 +132,25 @@ func (h *Handler) removeBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.db.Exec(`DELETE FROM books WHERE title = $1`, title)
-	if err != nil {
-		respondError(w, err, http.StatusInternalServerError, "Error removing book")
-		return
-	}
-
-	// delete book from collection_subscriptions
-	_, err = h.db.Exec(`DELETE FROM collection_subscriptions WHERE book_title = $1`, title)
+	// delete book subscriptions from collection_subscriptions table first
+	_, err := h.db.Exec(`DELETE FROM collection_subscriptions WHERE book_title = $1`, title)
 	if err != nil {
 		respondError(w, err, http.StatusInternalServerError, "Error removing book from collection_subscriptions")
 		return
 	}
 
-	respondJSON(w, nil)
+	// remove book from books table
+	_, err = h.db.Exec(`DELETE FROM books WHERE title = $1`, title)
+	if err != nil {
+		respondError(w, err, http.StatusInternalServerError, "Error removing book")
+		return
+	}
+
+	respondJSON(w, nil, "Book removed successfully", http.StatusOK)
 }
 
-// getBooks returns all books
-func (h *Handler) getBooks(w http.ResponseWriter, r *http.Request) {
+// listBooks returns all books
+func (h *Handler) listBooks(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Query().Get("title")
 	genre := r.URL.Query().Get("genre")
 	author := r.URL.Query().Get("author")
@@ -140,28 +163,30 @@ func (h *Handler) getBooks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add filter conditions to query
-	query := "SELECT title, author, published_at, edition, description, genre FROM books"
+	query := "SELECT title, author, publish_date, edition, description, genre FROM books"
 	conditions := []string{}
+	values := []any{}
+	counter := 1
 	if title != "" {
-		conditions = append(conditions, fmt.Sprintf("title = '%s'", title))
+		genSQLConditions(&conditions, &values, "=", "title", title, &counter)
 	}
 	if genre != "" {
-		conditions = append(conditions, fmt.Sprintf("genre = '%s'", genre))
+		genSQLConditions(&conditions, &values, "=", "genre", genre, &counter)
 	}
 	if author != "" {
-		conditions = append(conditions, fmt.Sprintf("author = '%s'", author))
+		genSQLConditions(&conditions, &values, "=", "author", author, &counter)
 	}
 	if publishStartDate != "" {
-		conditions = append(conditions, fmt.Sprintf("published_at >= '%s'", publishStartDate))
+		genSQLConditions(&conditions, &values, ">=", "publish_date", publishStartDate, &counter)
 	}
 	if publishEndDate != "" {
-		conditions = append(conditions, fmt.Sprintf("published_at <= '%s'", publishEndDate))
+		genSQLConditions(&conditions, &values, "<=", "publish_date", publishEndDate, &counter)
 	}
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	rows, err := h.db.Query(query)
+	rows, err := h.db.Query(query, values...)
 	if err != nil {
 		respondError(w, err, http.StatusInternalServerError, "Error getting books")
 		return
@@ -172,7 +197,7 @@ func (h *Handler) getBooks(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var book api.Book
-		err := rows.Scan(&book.Title, &book.Author, &book.PublishedAt, &book.Edition, &book.Description, &book.Genre)
+		err := rows.Scan(&book.Title, &book.Author, &book.PublishDate, &book.Edition, &book.Description, &book.Genre)
 		if err != nil {
 			respondError(w, err, http.StatusInternalServerError, "Error getting books")
 			return
@@ -180,14 +205,13 @@ func (h *Handler) getBooks(w http.ResponseWriter, r *http.Request) {
 		books = append(books, book)
 	}
 
-	respondJSON(w, books)
+	respondJSON(w, books, "Books retrieved successfully", http.StatusOK)
 }
 
 // createCollection creates a collection
 func (h *Handler) createCollection(w http.ResponseWriter, r *http.Request) {
 	// get parameter from URL with chi library
 	collectionName := r.URL.Query().Get("collection_name")
-	fmt.Println(string(collectionName))
 
 	_, err := h.db.Exec(`INSERT INTO collections (name) VALUES ($1)`, collectionName)
 	if err != nil {
@@ -195,31 +219,33 @@ func (h *Handler) createCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, nil)
+	respondJSON(w, nil, "Collection created successfully", http.StatusOK)
 }
 
 // removeCollection removes a collection
 func (h *Handler) removeCollection(w http.ResponseWriter, r *http.Request) {
 	collectionName := r.URL.Query().Get("collection_name")
+
 	if collectionName == "" {
 		respondError(w, nil, http.StatusBadRequest, "collection_name cannot be empty")
 		return
 	}
 
-	_, err := h.db.Exec(`DELETE FROM collections WHERE name = $1`, collectionName)
+	// remove all subscribed books in collection_subscription table first
+	_, err := h.db.Exec(`DELETE FROM collection_subscriptions WHERE collection_name = $1`, collectionName)
 	if err != nil {
 		respondError(w, err, http.StatusInternalServerError, "Error removing collection")
 		return
 	}
 
-	// remove all books in the collection subscription
-	_, err = h.db.Exec(`DELETE FROM collection_subscriptions WHERE collection_name = $1`, collectionName)
+	// remove collection in collections table
+	_, err = h.db.Exec(`DELETE FROM collections WHERE name = $1`, collectionName)
 	if err != nil {
 		respondError(w, err, http.StatusInternalServerError, "Error removing collection")
 		return
 	}
 
-	respondJSON(w, nil)
+	respondJSON(w, nil, "Collection removed successfully", http.StatusOK)
 }
 
 // getCollections returns all books in a collection
@@ -243,11 +269,11 @@ func (h *Handler) getCollections(w http.ResponseWriter, r *http.Request) {
 		collections = append(collections, collection)
 	}
 
-	respondJSON(w, collections)
+	respondJSON(w, collections, "Collections retrieved successfully", http.StatusOK)
 }
 
 // addBookToCollection adds a book to a collection
-func (h *Handler) addToCollection(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) addBookToCollection(w http.ResponseWriter, r *http.Request) {
 	// get parameter from URL with chi library
 	collectionName := r.URL.Query().Get("collection_name")
 	bookTitle := r.URL.Query().Get("book_title")
@@ -258,11 +284,11 @@ func (h *Handler) addToCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, nil)
+	respondJSON(w, nil, "Book added to collection successfully", http.StatusOK)
 }
 
-// removeFromCollection removes a book from a collection
-func (h *Handler) removeFromCollection(w http.ResponseWriter, r *http.Request) {
+// removeBookFromCollection removes a book from a collection
+func (h *Handler) removeBookFromCollection(w http.ResponseWriter, r *http.Request) {
 	collectionName := r.URL.Query().Get("collection_name")
 	bookTitle := r.URL.Query().Get("book_title")
 
@@ -272,7 +298,7 @@ func (h *Handler) removeFromCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, nil)
+	respondJSON(w, nil, "Book removed from collection successfully", http.StatusOK)
 }
 
 // getBooksInCollection returns all books in a collection
@@ -297,5 +323,5 @@ func (h *Handler) getBooksInCollection(w http.ResponseWriter, r *http.Request) {
 		books = append(books, book)
 	}
 
-	respondJSON(w, books)
+	respondJSON(w, books, "Books in collection retrieved successfully", http.StatusOK)
 }

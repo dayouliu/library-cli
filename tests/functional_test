@@ -1,0 +1,56 @@
+##### add books
+
+./bms book create "book1" --author="author1" --description="description1" --publish_date="2000-01-01" --genre="genre1" --edition="1"
+./bms book create "book2" --author="author2" --description="description2" --publish_date="2000-01-02" --genre="genre2" --edition="2"
+./bms book create "book3" --author="author3" --description="description3" --publish_date="2000-01-03" --genre="genre3" --edition="3"
+./bms book create "book4" --author="author1" --description="description4" --publish_date="2000-01-04" --genre="genre1" --edition="4"
+./bms book create "book5" --author="author2" --description="description5" --publish_date="2000-01-05" --genre="genre5" --edition="5"
+./bms book create "book6" --author="author2" --genre="genre6"
+./bms book list
+
+##### update books
+
+./bms book set "book5" --author="author5 update" --description="description5 update" --publish_date="2000-01-06" --genre="genre5 update" --edition="5 update"
+
+##### filtering
+
+./bms book list --author="author1"
+./bms book list --publish_start="2000-01-01" --publish_end="2000-01-04"
+./bms book list --publish_start="2000-01-01" --publish_end="2000-01-04" --author="author1"
+
+##### add collections
+
+./bms collection create "collection1"
+./bms collection create "collection2"
+./bms collection create "collection3"
+
+./bms collection list
+
+##### add and remove books from collections
+
+./bms collection add-book "collection1" "book1"
+./bms collection add-book "collection1" "book2"
+./bms collection add-book "collection2" "book1"
+
+./bms collection list "collection1"
+./bms collection list "collection2"
+
+./bms collection remove-book "collection1" "book1"
+./bms collection list "collection1"
+
+###### remove books and collections
+
+./bms book remove "book1"
+./bms book list
+./bms collection list "collection1"
+./bms collection list "collection2"
+
+./bms collection remove "collection1"
+./bms collection list
+./bms collection list "collection1"
+
+
+
+
+
+

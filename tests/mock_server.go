@@ -46,10 +46,11 @@ func mockRespondError(w http.ResponseWriter, err error, statusCode int, message 
 }
 
 // mockRespondJSON mocks a server successful JSON response
-func mockRespondJSON(w http.ResponseWriter, data interface{}) {
+func mockRespondJSON(w http.ResponseWriter, data interface{}, message string) {
 	response := api.Response{
 		Type:       "success",
 		StatusCode: http.StatusCreated,
+		Message:    message,
 	}
 	if data != nil {
 		response.Data = data
@@ -91,7 +92,7 @@ func mockCreateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mockRespondJSON(w, nil)
+	mockRespondJSON(w, nil, "Book created successfully")
 }
 
 // mockListBooks mocks the book/list route
@@ -107,5 +108,5 @@ func mockListBooks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mockRespondJSON(w, books)
+	mockRespondJSON(w, books, "Books listed successfully")
 }

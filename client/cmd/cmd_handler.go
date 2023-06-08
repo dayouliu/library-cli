@@ -81,6 +81,7 @@ func sendPostRequestJSONBody(endpoint string, data interface{}) (api.Response, e
 	var response api.Response
 	err = json.Unmarshal(body, &response)
 	if err != nil {
+		fmt.Println(string(body))
 		return api.Response{}, err
 	}
 
@@ -147,14 +148,14 @@ func createBook(cmd *cobra.Command, args []string) string {
 	title := args[0]
 	author, _ := cmd.Flags().GetString("author")
 	genre, _ := cmd.Flags().GetString("genre")
-	publishedAtStr, _ := cmd.Flags().GetString("published_at")
+	publishDateStr, _ := cmd.Flags().GetString("publish_date")
 	description, _ := cmd.Flags().GetString("description")
 	edition, _ := cmd.Flags().GetString("edition")
 
-	var publishedAt time.Time
+	var publishDate time.Time
 	var err error
-	if publishedAtStr != "" {
-		publishedAt, err = time.Parse(api.PublishTimeLayoutDMY, publishedAtStr)
+	if publishDateStr != "" {
+		publishDate, err = time.Parse(api.PublishTimeLayoutDMY, publishDateStr)
 		if err != nil {
 			return fmt.Sprintf("Error: %s", err)
 		}
@@ -164,7 +165,7 @@ func createBook(cmd *cobra.Command, args []string) string {
 		Title:       title,
 		Author:      author,
 		Genre:       genre,
-		PublishedAt: publishedAt,
+		PublishDate: publishDate,
 		Description: description,
 		Edition:     edition,
 	}
@@ -174,7 +175,7 @@ func createBook(cmd *cobra.Command, args []string) string {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Book created successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }
 
 // setBook sets a book's attributes optionally given the book title
@@ -182,15 +183,16 @@ func setBook(cmd *cobra.Command, args []string) string {
 	title := args[0]
 	author, _ := cmd.Flags().GetString("author")
 	genre, _ := cmd.Flags().GetString("genre")
-	publishedAtStr, _ := cmd.Flags().GetString("published_at")
+	publishDateStr, _ := cmd.Flags().GetString("publish_date")
 	description, _ := cmd.Flags().GetString("description")
 	edition, _ := cmd.Flags().GetString("edition")
 
-	var publishedAt time.Time
+	var publishDate time.Time
 	var err error
-	if publishedAtStr != "" {
-		publishedAt, err = time.Parse(api.PublishTimeLayoutDMY, publishedAtStr)
+	if publishDateStr != "" {
+		publishDate, err = time.Parse(api.PublishTimeLayoutDMY, publishDateStr)
 		if err != nil {
+			fmt.Println(publishDateStr)
 			return fmt.Sprintf("Error: %s", err)
 		}
 	}
@@ -199,7 +201,7 @@ func setBook(cmd *cobra.Command, args []string) string {
 		Title:       title,
 		Author:      author,
 		Genre:       genre,
-		PublishedAt: publishedAt,
+		PublishDate: publishDate,
 		Description: description,
 		Edition:     edition,
 	}
@@ -209,7 +211,7 @@ func setBook(cmd *cobra.Command, args []string) string {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Book updated successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }
 
 // removeBook removes a book from the system
@@ -224,7 +226,7 @@ func removeBook(cmd *cobra.Command, args []string) string {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Book removed successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }
 
 // listCollection either:
@@ -243,7 +245,7 @@ func listCollection(cmd *cobra.Command, args []string) string {
 		params := url.Values{}
 		params.Set("collection_name", collectionName)
 
-		resp, err := sendPostRequestURLParams("/collection/list/books", params)
+		resp, err := sendGetRequestURLParams("/collection/list/books", params)
 
 		if err != nil {
 			return fmt.Sprintf("Error: %s", err)
@@ -266,7 +268,7 @@ func createCollection(cmd *cobra.Command, args []string) string {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Collection created successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }
 
 // removeCollection removes a collection
@@ -282,11 +284,11 @@ func removeCollection(cmd *cobra.Command, args []string) string {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Collection removed successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }
 
-// addToCollection adds a book to a collection
-func addToCollection(cmd *cobra.Command, args []string) string {
+// addBookToCollection adds a book to a collection
+func addBookToCollection(cmd *cobra.Command, args []string) string {
 	collectionName := args[0]
 	bookTitle := args[1]
 
@@ -294,17 +296,17 @@ func addToCollection(cmd *cobra.Command, args []string) string {
 	params := url.Values{}
 	params.Set("collection_name", collectionName)
 	params.Set("book_title", bookTitle)
-	resp, err := sendPostRequestURLParams("/collection/add", params)
+	resp, err := sendPostRequestURLParams("/collection/add-book", params)
 
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Book added to collection successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }
 
-// removeFromCollection removes a book from a collection
-func removeFromCollection(cmd *cobra.Command, args []string) string {
+// removeBookFromCollection removes a book from a collection
+func removeBookFromCollection(cmd *cobra.Command, args []string) string {
 	collectionName := args[0]
 	bookTitle := args[1]
 
@@ -312,11 +314,11 @@ func removeFromCollection(cmd *cobra.Command, args []string) string {
 	params := url.Values{}
 	params.Set("collection_name", collectionName)
 	params.Set("book_title", bookTitle)
-	resp, err := sendPostRequestURLParams("/collection/remove", params)
+	resp, err := sendPostRequestURLParams("/collection/remove-book", params)
 
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
-	return prettyPrintResponse(resp, false, "Book added to collection successfully")
+	return prettyPrintResponse(resp, false, resp.Message)
 }

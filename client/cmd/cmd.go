@@ -18,7 +18,7 @@ var listBookCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List books",
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(listBooks(cmd, args))
+		cmd.Println(listBooks(cmd, args))
 	},
 }
 
@@ -27,7 +27,7 @@ var createBookCmd = &cobra.Command{
 	Short: "Create a book",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(createBook(cmd, args))
+		cmd.Println(createBook(cmd, args))
 	},
 }
 
@@ -36,7 +36,7 @@ var setBookCmd = &cobra.Command{
 	Short: "Set a book",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(setBook(cmd, args))
+		cmd.Println(setBook(cmd, args))
 	},
 }
 
@@ -45,7 +45,7 @@ var removeBookCmd = &cobra.Command{
 	Short: "Remove a book",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(removeBook(cmd, args))
+		cmd.Println(removeBook(cmd, args))
 	},
 }
 
@@ -59,7 +59,7 @@ var createCollectionCmd = &cobra.Command{
 	Short: "Create a collection",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(createCollection(cmd, args))
+		cmd.Println(createCollection(cmd, args))
 	},
 }
 
@@ -68,25 +68,25 @@ var removeCollectionCmd = &cobra.Command{
 	Short: "Remove a collection",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(removeCollection(cmd, args))
+		cmd.Println(removeCollection(cmd, args))
 	},
 }
 
-var addToCollectionCmd = &cobra.Command{
+var addBookToCollectionCmd = &cobra.Command{
 	Use:   "add-book",
 	Short: "Add a book to a collection",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(addToCollection(cmd, args))
+		cmd.Println(addBookToCollection(cmd, args))
 	},
 }
 
-var removeFromCollectionCmd = &cobra.Command{
+var removeBookFromCollectionCmd = &cobra.Command{
 	Use:   "remove-book",
 	Short: "Remove a book from a collection",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(removeFromCollection(cmd, args))
+		cmd.Println(removeBookFromCollection(cmd, args))
 	},
 }
 
@@ -94,7 +94,7 @@ var listCollectionCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List books in a collection",
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf(listCollection(cmd, args))
+		cmd.Println(listCollection(cmd, args))
 	},
 }
 
@@ -103,7 +103,7 @@ func init() {
 	createBookCmd.Flags().StringP("title", "", "", "Title of the book")
 	createBookCmd.Flags().StringP("author", "", "", "Author of the book")
 	createBookCmd.Flags().StringP("genre", "", "", "Genre of the book")
-	createBookCmd.Flags().StringP("published_at", "", "", "Published date of the book")
+	createBookCmd.Flags().StringP("publish_date", "", "", "publish date of the book")
 	createBookCmd.Flags().StringP("description", "", "", "Description of the book")
 	createBookCmd.Flags().StringP("edition", "", "", "Edition of the book")
 
@@ -112,11 +112,13 @@ func init() {
 	listBookCmd.Flags().StringP("title", "", "", "Get book with title")
 	listBookCmd.Flags().StringP("author", "", "", "Filter books by author")
 	listBookCmd.Flags().StringP("genre", "", "", "Filter books by genre")
+	listBookCmd.Flags().StringP("publish_start", "", "", "Filter books from publish start date (YYYY-MM-DD)")
+	listBookCmd.Flags().StringP("publish_end", "", "", "Filter books to publish end date (YYYY-MM-DD)")
 
 	// optional args for setBookCmd
 	setBookCmd.Flags().StringP("author", "", "", "Author of the book")
 	setBookCmd.Flags().StringP("genre", "", "", "Genre of the book")
-	setBookCmd.Flags().StringP("published_at", "", "", "Published date of the book")
+	setBookCmd.Flags().StringP("publish_date", "", "", "publish date of the book (YYYY-MM-DD)")
 	setBookCmd.Flags().StringP("description", "", "", "Description of the book")
 	setBookCmd.Flags().StringP("edition", "", "", "Edition of the book")
 
@@ -128,8 +130,8 @@ func init() {
 
 	// collection subcommands
 	collectionCmd.AddCommand(createCollectionCmd)
-	collectionCmd.AddCommand(addToCollectionCmd)
-	collectionCmd.AddCommand(removeFromCollectionCmd)
+	collectionCmd.AddCommand(addBookToCollectionCmd)
+	collectionCmd.AddCommand(removeBookFromCollectionCmd)
 	collectionCmd.AddCommand(listCollectionCmd)
 	collectionCmd.AddCommand(removeCollectionCmd)
 

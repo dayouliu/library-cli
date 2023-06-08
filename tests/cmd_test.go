@@ -40,33 +40,33 @@ func TestCommands(t *testing.T) {
 
 	// table driven tests
 	testCases := []struct {
-		name         string
-		args         []string
-		flags        map[string]string
-		cmdHandler   func(cmd *cobra.Command, args []string) string
-		expectedCode int
-		expectedBody string
+		name               string
+		args               []string
+		flags              map[string]string
+		cmdHandler         func(cmd *cobra.Command, args []string) string
+		expectedStatusCode int
+		expectedOutput     string
 	}{
 		{
-			name:         "Valid create book",
-			args:         []string{"book", "create", "book1"},
-			flags:        map[string]string{},
-			expectedCode: http.StatusCreated,
-			expectedBody: "Book created successfully",
+			name:               "Valid create book",
+			args:               []string{"book", "create", "book1"},
+			flags:              map[string]string{},
+			expectedStatusCode: http.StatusCreated,
+			expectedOutput:     "Book created successfully\n",
 		},
 		{
-			name:         "Invalid create book",
-			args:         []string{"book", "create", ""},
-			flags:        map[string]string{},
-			expectedCode: http.StatusBadRequest,
-			expectedBody: "Error: Title cannot be empty",
+			name:               "Invalid create book",
+			args:               []string{"book", "create", ""},
+			flags:              map[string]string{},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedOutput:     "Error: Title cannot be empty\n",
 		},
 		{
-			name:         "List books",
-			args:         []string{"book", "list"},
-			flags:        map[string]string{},
-			expectedCode: http.StatusOK,
-			expectedBody: string(mockBookListData),
+			name:               "List books",
+			args:               []string{"book", "list"},
+			flags:              map[string]string{},
+			expectedStatusCode: http.StatusOK,
+			expectedOutput:     string(mockBookListData),
 		},
 		// Add more tests for each command as necessary
 	}
@@ -99,14 +99,9 @@ func TestCommands(t *testing.T) {
 
 			// Get the captured output and compare
 			cmdOutput := buf.String()
-			if cmdOutput != tc.expectedBody && !compareJSON(cmdOutput, tc.expectedBody) {
-				t.Errorf("Expected body %v, but got %v", tc.expectedBody, cmdOutput)
+			if cmdOutput != tc.expectedOutput && !compareJSON(cmdOutput, tc.expectedOutput) {
+				t.Errorf("Expected body %v, but got %v", tc.expectedOutput, cmdOutput)
 			}
 		})
 	}
-}
-
-func TestMain(m *testing.M) {
-	// Run the tests
-	m.Run()
 }

@@ -2,12 +2,12 @@ package api
 
 import "time"
 
-var PublishTimeLayoutDMY = "02/01/2006"
+var PublishTimeLayoutDMY = "2006-01-02"
 
 type Book struct {
 	Title       string    `json:"title"`
 	Author      string    `json:"author"`
-	PublishedAt time.Time `json:"published_at"`
+	PublishDate time.Time `json:"publish_date"`
 	Edition     string    `json:"edition"`
 	Description string    `json:"description"`
 	Genre       string    `json:"genre"`
