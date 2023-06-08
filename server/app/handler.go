@@ -245,7 +245,7 @@ func (h *Handler) removeCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, nil, "Collection removed successfully", http.StatusOK)
+	respondJSON(w, nil, "Collection removed successfully", http.StatusCreated)
 }
 
 // getCollections returns all books in a collection

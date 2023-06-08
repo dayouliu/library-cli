@@ -49,20 +49,20 @@ func NewApp(config Config) *App {
 	// book endpoints
 	router.Post("/book/create", handler.createBook)
 	router.Get("/book/list", handler.listBooks)
-	router.Post("/book/set", handler.setBook)
-	router.Post("/book/remove", handler.removeBook)
+	router.Put("/book/set", handler.setBook)
+	router.Delete("/book/remove", handler.removeBook)
 
 	// collection endpoints
 	router.Post("/collection/create", handler.createCollection)
+	router.Delete("/collection/remove", handler.removeCollection)
 	router.Post("/collection/add-book", handler.addBookToCollection)
-	router.Post("/collection/remove", handler.removeCollection)
-	router.Post("/collection/remove-book", handler.removeBookFromCollection)
+	router.Delete("/collection/remove-book", handler.removeBookFromCollection)
 	router.Get("/collection/list", handler.getCollections)
 	router.Get("/collection/list/books", handler.getBooksInCollection)
 
 	// Start the server
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", config.ServerPort), // Specify the address where your server is running
+		Addr:    fmt.Sprintf(":%s", config.ServerPort),
 		Handler: router,
 	}
 
@@ -94,8 +94,7 @@ func createTables(db *sql.DB) {
 	);`
 
 	createCollectionsTableQuery := `CREATE TABLE IF NOT EXISTS collections (
-		name VARCHAR(255) NOT NULL PRIMARY KEY,
-    	description TEXT
+		name VARCHAR(255) NOT NULL PRIMARY KEY
 	);`
 
 	createCollectionSubscriptions := `CREATE TABLE IF NOT EXISTS collection_subscriptions (

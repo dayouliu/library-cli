@@ -6,6 +6,8 @@ The book management system (bms) is broken into 3 parts:
 - the server serving REST APIs located in the server directory running on port `8080`
 - Postgres database storing the book and collection data.
 
+All commands to run each part of the system are located in the Makefile.
+
 ### Running the app
 
 The Postgres database can be started by running the Docker Compose file
@@ -178,7 +180,7 @@ Sample success response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Book updated successfully",
     "data": null
 }
@@ -229,7 +231,7 @@ Example JSON response:
 
 `book/set`
 
-- POST request with JSON request body
+- PUT request with JSON request body
 
 Example JSON request body:
 
@@ -249,7 +251,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Book updated successfully",
     "data": null
 }
@@ -259,7 +261,7 @@ Example JSON response:
 
 `book/remove`
 
-- POST request with title URL parameter
+- DELETE request with title URL parameter
 
 Example request:
 
@@ -270,7 +272,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Book removed successfully",
     "data": null
 }
@@ -294,7 +296,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Books retrieved successfully",
     "data": [
         {
@@ -361,7 +363,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Collections retrieved successfully",
     "data": [
         "collection1",
@@ -386,7 +388,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Books in collection retrieved successfully",
     "data": [
         "book1"
@@ -398,7 +400,7 @@ Example JSON response:
 
 `collection/remove`
 
-- GET request with required `collection_name` URL parameter
+- DELETE request with required `collection_name` URL parameter
 
 Example request:
 
@@ -409,7 +411,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Collection removed successfully",
     "data": null
 }
@@ -430,7 +432,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Book added to collection successfully",
     "data": null
 }
@@ -440,7 +442,7 @@ Example JSON response:
 
 `collection/remove-book`
 
-- POST request with required `collection_name` and `book_title` URL parameter
+- DELETE request with required `collection_name` and `book_title` URL parameter
 
 Example request:
 
@@ -451,7 +453,7 @@ Example JSON response:
 ```bash
 {
     "type": "success",
-    "status_code": 201,
+    "status_code": 200,
     "message": "Book removed from collection successfully",
     "data": null
 }
@@ -472,8 +474,7 @@ CREATE TABLE IF NOT EXISTS books (
 
 ```
 CREATE TABLE IF NOT EXISTS collections (
-    name VARCHAR(255) NOT NULL PRIMARY KEY,
-    description TEXT
+    name VARCHAR(255) NOT NULL PRIMARY KEY
 );
 ```
 

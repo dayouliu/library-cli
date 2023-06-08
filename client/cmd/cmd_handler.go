@@ -16,14 +16,39 @@ var (
 	ServerUrl = "http://localhost:8080"
 )
 
-// sendGetRequestURLParams sends a GET request to the server and returns the response
-func sendGetRequestURLParams(endpoint string, params url.Values) (api.Response, error) {
-	resp, err := http.Get(ServerUrl + endpoint + "?" + params.Encode())
+func makeRequest(method string, endpoint string, params url.Values, payload interface{}) (api.Response, error) {
+	// Create the URL with query parameters
+	requestURL, err := url.Parse(ServerUrl + endpoint)
+	if err != nil {
+		return api.Response{}, err
+	}
+	requestURL.RawQuery = params.Encode()
+
+	// Convert payload to JSON
+	var payloadBytes []byte
+	if payload != nil {
+		payloadBytes, err = json.Marshal(payload)
+		if err != nil {
+			return api.Response{}, err
+		}
+	}
+
+	// Create the HTTP request
+	request, err := http.NewRequest(method, requestURL.String(), bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return api.Response{}, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+
+	// Send the HTTP request
+	client := http.Client{}
+	resp, err := client.Do(request)
 	if err != nil {
 		return api.Response{}, err
 	}
 	defer resp.Body.Close()
 
+	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return api.Response{}, err
@@ -32,56 +57,6 @@ func sendGetRequestURLParams(endpoint string, params url.Values) (api.Response, 
 	var response api.Response
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return api.Response{}, err
-	}
-
-	return response, nil
-}
-
-// sendPostRequestURLParams sends a POST request to the server and returns the response using URL params
-func sendPostRequestURLParams(endpoint string, params url.Values) (api.Response, error) {
-	resp, err := http.Post(ServerUrl+endpoint+"?"+params.Encode(), "", nil)
-	if err != nil {
-		return api.Response{}, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return api.Response{}, err
-	}
-
-	var response api.Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return api.Response{}, err
-	}
-
-	return response, nil
-}
-
-// sendPostRequestJSONBody sends a POST request to the server and returns the response using a JSON body
-func sendPostRequestJSONBody(endpoint string, data interface{}) (api.Response, error) {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return api.Response{}, err
-	}
-
-	resp, err := http.Post(ServerUrl+endpoint, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return api.Response{}, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return api.Response{}, err
-	}
-
-	var response api.Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		fmt.Println(string(body))
 		return api.Response{}, err
 	}
 
@@ -135,7 +110,7 @@ func listBooks(cmd *cobra.Command, args []string) string {
 		params.Add("publish_end", publishDateEnd)
 	}
 
-	response, err := sendGetRequestURLParams("/book/list", params)
+	response, err := makeRequest(http.MethodGet, "/book/list", params, nil)
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
@@ -170,7 +145,7 @@ func createBook(cmd *cobra.Command, args []string) string {
 		Edition:     edition,
 	}
 
-	resp, err := sendPostRequestJSONBody("/book/create", book)
+	resp, err := makeRequest(http.MethodPost, "/book/create", nil, book)
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
@@ -206,7 +181,7 @@ func setBook(cmd *cobra.Command, args []string) string {
 		Edition:     edition,
 	}
 
-	resp, err := sendPostRequestJSONBody("/book/set", book)
+	resp, err := makeRequest(http.MethodPut, "/book/set", nil, book)
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
@@ -221,7 +196,7 @@ func removeBook(cmd *cobra.Command, args []string) string {
 	params := url.Values{}
 	params.Set("title", title)
 
-	resp, err := sendPostRequestURLParams("/book/remove", params)
+	resp, err := makeRequest(http.MethodDelete, "/book/remove", params, nil)
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
@@ -234,7 +209,7 @@ func removeBook(cmd *cobra.Command, args []string) string {
 // list all books in collection_name arg if arg is provided
 func listCollection(cmd *cobra.Command, args []string) string {
 	if len(args) == 0 {
-		response, err := sendGetRequestURLParams("/collection/list", url.Values{})
+		response, err := makeRequest(http.MethodGet, "/collection/list", nil, nil)
 		if err != nil {
 			return fmt.Sprintf("Error: %s", err)
 		}
@@ -245,7 +220,7 @@ func listCollection(cmd *cobra.Command, args []string) string {
 		params := url.Values{}
 		params.Set("collection_name", collectionName)
 
-		resp, err := sendGetRequestURLParams("/collection/list/books", params)
+		resp, err := makeRequest(http.MethodGet, "/collection/list/books", params, nil)
 
 		if err != nil {
 			return fmt.Sprintf("Error: %s", err)
@@ -262,7 +237,7 @@ func createCollection(cmd *cobra.Command, args []string) string {
 	// post request with url parameters
 	params := url.Values{}
 	params.Set("collection_name", collectionName)
-	resp, err := sendPostRequestURLParams("/collection/create", params)
+	resp, err := makeRequest(http.MethodPost, "/collection/create", params, nil)
 
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
@@ -278,7 +253,7 @@ func removeCollection(cmd *cobra.Command, args []string) string {
 	// post request with url parameters
 	params := url.Values{}
 	params.Set("collection_name", collectionName)
-	resp, err := sendPostRequestURLParams("/collection/remove", params)
+	resp, err := makeRequest(http.MethodDelete, "/collection/remove", params, nil)
 
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
@@ -296,7 +271,7 @@ func addBookToCollection(cmd *cobra.Command, args []string) string {
 	params := url.Values{}
 	params.Set("collection_name", collectionName)
 	params.Set("book_title", bookTitle)
-	resp, err := sendPostRequestURLParams("/collection/add-book", params)
+	resp, err := makeRequest(http.MethodPost, "/collection/add-book", params, nil)
 
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
@@ -314,7 +289,7 @@ func removeBookFromCollection(cmd *cobra.Command, args []string) string {
 	params := url.Values{}
 	params.Set("collection_name", collectionName)
 	params.Set("book_title", bookTitle)
-	resp, err := sendPostRequestURLParams("/collection/remove-book", params)
+	resp, err := makeRequest(http.MethodDelete, "/collection/remove-book", params, nil)
 
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)

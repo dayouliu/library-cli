@@ -2,5 +2,8 @@
 cli:
 	go build -o bms client/main.go
 
-database:
+db:
 	docker-compose down && docker-compose up -d
+
+api:
+	go run server/main.go

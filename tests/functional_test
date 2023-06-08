@@ -11,6 +11,9 @@
 ##### update books
 
 ./bms book set "book5" --author="author5 update" --description="description5 update" --publish_date="2000-01-06" --genre="genre5 update" --edition="5 update"
+./bms book list --title="book5"
+./bms book set "book5" --author="author5 update 2"
+./bms book list --title="book5"
 
 ##### filtering
 
@@ -36,6 +39,8 @@
 ./bms collection list "collection2"
 
 ./bms collection remove-book "collection1" "book1"
+./bms collection list "collection1"
+./bms collection add-book "collection1" "book1"
 ./bms collection list "collection1"
 
 ###### remove books and collections
