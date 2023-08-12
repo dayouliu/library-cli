@@ -49,7 +49,7 @@ go version go1.20.4 linux/amd64
 go version go1.20.4 darwin/amd64
 ```
 
-# Step 1: User Experience CLI Client
+# CLI Client
 
 - commands follow POSIX conventions
 - some conventions are inspired by LXD
@@ -171,7 +171,7 @@ Sample command output:
 ./bms collection remove "collection 1"
 ```
 
-# Step 2: REST API Server
+# REST API Server
 
 ### Structure
 
@@ -459,7 +459,7 @@ Example JSON response:
 }
 ```
 
-# Step 3: SQL Database
+# SQL Database
 
 ```
 CREATE TABLE IF NOT EXISTS books (
